@@ -255,12 +255,12 @@ def render_pier_analysis(pier_name, section, load_data, strain_gauges, modulus_e
     with col_stress:
         st.subheader("Diagram Tegangan (σzz)")
         fig = create_mesh_plot(x_coords, y_coords, sig_zz, nodes, elements, "σzz", "MPa", "Tegangan", strain_gauges, sg_stress_vals)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     
     with col_strain:
         st.subheader("Diagram Regangan (ε)")
         fig = create_mesh_plot(x_coords, y_coords, strain_zz, nodes, elements, "ε", "με", "Regangan", strain_gauges, sg_strain_vals)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # 6. Statistics & Table
     display_statistics(sig_zz, "σzz", "MPa", "Statistik Tegangan")
@@ -337,11 +337,11 @@ with tabs[-1]: # Last tab
             st.subheader("Tren Tegangan Aksial (σzz)")
             fig_stress = px.line(df_history, x="Stage", y="Stress (MPa)", color="SG", facet_col="Pier", facet_col_wrap=2, markers=True)
             fig_stress.update_layout(height=800)
-            st.plotly_chart(fig_stress, use_container_width=True)
+            st.plotly_chart(fig_stress, width="stretch")
         with trend_tab2:
             st.subheader("Tren Regangan (ε)")
             fig_strain = px.line(df_history, x="Stage", y="Strain (με)", color="SG", facet_col="Pier", facet_col_wrap=2, markers=True)
             fig_strain.update_layout(height=800)
-            st.plotly_chart(fig_strain, use_container_width=True)
+            st.plotly_chart(fig_strain, width="stretch")
         
         st.download_button("Download Data Historis (CSV)", df_history.to_csv(index=False), "stress_strain_history.csv", "text/csv")
