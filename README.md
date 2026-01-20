@@ -1,64 +1,86 @@
-# Sedyatmo Strain Gauge Monitoring Dashboard
+# Dashboard Monitoring SHMS - Jembatan Sedyatmo (Ramp 1)
 
-Dashboard interaktif untuk memonitor tegangan (stress) dan regangan (strain) aktual maupun teoritis pada proyek jembatan IC Tol Sedyatmo - Kartaraja. Aplikasi ini dibangun menggunakan Python dan Streamlit.
+Platform monitoring kesehatan struktur (Structural Health Monitoring System) untuk Jembatan IC Sedyatmo - Kartaraja. Aplikasi ini dirancang untuk memantau integritas struktur Pier dan Box Girder melalui visualisasi data sensor strain gauge, baik secara aktual (real-time/historis) maupun teoritis (analisis elemen hingga).
 
-## Fitur Utama
+## 🚀 Fitur Utama
 
--   **Analisis Per Pier**: Visualisasi distribusi tegangan dan regangan pada penampang pier (Pilar 3A, 3B, 4A, 4B).
--   **Mesh Visualization**: Plot interaktif penampang beton menggunakan `plotly` dan `sectionproperties`.
--   **Strain Gauge Monitoring**: Menampilkan posisi dan nilai teoritis strain gauge pada penampang.
--   **Analisis Tren**: Grafik historis tegangan dan regangan berdasarkan data stage pengerjaan.
--   **Data Export**: Kemampuan untuk mengunduh data historis dalam format CSV.
+### 1. Multi-Page Application
+Aplikasi menggunakan arsitektur modern dengan navigasi intuitif:
+- **Home (`Home.py`)**: Landing page profesional sebagai pusat kendali.
+- **Monitoring Pier (`pages/1_Monitoring_Pier.py`)**: Dashboard analisis mendalam untuk pilar jembatan.
+- **Monitoring Box Girder (`pages/2_Monitoring_Box_Girder.py`)**: (Dalam Pengembangan) Modul untuk struktur bentang atas.
 
-## Struktur Direktori
+### 2. Analisis Per Pier
+Dashboard mendetail untuk **Pier 3A, 3B, 4A, dan 4B**:
+- **Visualisasi Geometri**: Menampilkan penampang pier menggunakan mesh elements (`sectionproperties`).
+- **Peta Panas (Heatmap)**: Distribusi tegangan ($\sigma_{zz}$) dan regangan ($\epsilon$) teoritis akibat beban aksial dan momen.
+- **Data Sensor Aktual vs Teoritis**:
+    - Perbandingan side-by-side antara kalkulasi FEA dan pembacaan sensor lapangan.
+    - Konversi otomatis dari data Raw ($\mu\epsilon$) ke Tegangan Aktual (MPa).
+- **Tabel Data**: Rincian nilai strain gauge dengan label yang jelas (Teoritis vs Aktual).
 
-```
+### 3. Analisis Tren Historis
+- Visualisasi grafik garis interaktif menggunakan `Plotly`.
+- Melacak perubahan tegangan dan regangan di setiap tahap konstruksi (Stage).
+- **Ekspor Data**: Fitur unduh data riwayat analisis ke format CSV (`analisis_tren_teoritis.csv`).
+
+---
+
+## 📂 Struktur Direktori
+
+```plaintext
 sedyatmo_strain_gauge_monitoring_dashboard/
+├── Home.py                     # Entry point (Landing Page)
+├── pages/
+│   ├── 1_Monitoring_Pier.py    # Logika Dashboard Pier
+│   └── 2_Monitoring_Box_Girder.py # Placeholder Box Girder
 ├── data/
-│   └── data_gaya.csv       # File input data gaya dan momen
-├── .conda/                 # (Opsional) Environment conda
-├── main_app.py             # File utama aplikasi Streamlit
-├── requirements.txt        # Daftar dependensi Python
-└── README.md               # Dokumentasi proyek
+│   ├── data_gaya.csv           # Input data beban (Gaya & Momen) per Stage
+│   └── data_gaya_aktual.csv    # Input data pembacaan sensor aktual
+├── requirements.txt            # Dependensi Python
+└── README.md                   # Dokumentasi
 ```
 
-## Persyaratan Sistem
+---
 
--   Python 3.8 atau lebih baru
--   PIP (Python Package Installer)
+## 🛠️ Instalasi & Penggunaan
 
-## Instalasi
+### Prasyarat
+- Python 3.9+
+- PIP (Python Package Manager)
 
-1.  **Clone atau Download** repositori ini ke komputer lokal Anda.
-
-2.  **Buat Virtual Environment** (disarankan):
+### Langkah Instalasi
+1.  **Clone Repositori** atau unduh source code.
+2.  **Buat Virtual Environment** (Rekomendasi):
     ```bash
-    # Windows
     python -m venv venv
-    venv\Scripts\activate
-
-    # Linux/Mac
-    python3 -m venv venv
+    # Windows:
+    .\venv\Scripts\activate
+    # Mac/Linux:
     source venv/bin/activate
     ```
-
-3.  **Install Dependensi**:
-    Jalankan perintah berikut untuk menginstall semua library yang dibutuhkan:
+3.  **Install Library**:
     ```bash
     pip install -r requirements.txt
     ```
 
-## Cara Menjalankan Aplikasi
-
-Setelah semua dependensi terinstall, jalankan aplikasi dengan perintah:
+### Menjalankan Aplikasi
+Gunakan perintah berikut untuk memulai server Streamlit:
 
 ```bash
-streamlit run main_app.py
+streamlit run Home.py
 ```
 
-Browser default Anda akan otomatis terbuka dan menampilkan dashboard di alamat `http://localhost:8501`.
+Aplikasi akan otomatis terbuka di browser pada `http://localhost:8501`.
 
-## Troubleshooting
+---
 
--   **Error `ModuleNotFoundError`**: Pastikan Anda telah mengaktifkan virtual environment dan menjalankan `pip install -r requirements.txt`.
--   **Masalah Ukuran Memori**: Perhitungan penampang (`sectionproperties`) bisa memakan memori cukup besar untuk mesh yang sangat halus. Jika aplikasi terasa lambat, coba kurangi kompleksitas mesh di kode `main_app.py`.
+## ℹ️ Catatan Teknis
+
+- **Baseline Config**: Nilai awal (raw) sensor disimpan dalam konfigurasi statis (`BASELINE_CONFIG`) untuk perhitungan nilai aktual yang akurat.
+- **Mesh Optimization**: Skala mesh dioptimalkan untuk performa rendering web tanpa mengurangi akurasi visual yang signifikan.
+- **Refactoring**: Kode telah direfaktor menggunakan standar PEP8, dengan pemisahan fungsi logika, UI, dan data helpers untuk kemudahan pemeliharaan (maintainability).
+
+---
+
+**Dikembangkan oleh KFT**
