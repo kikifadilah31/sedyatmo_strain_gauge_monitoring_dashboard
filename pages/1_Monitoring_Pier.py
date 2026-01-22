@@ -357,7 +357,7 @@ def render_pier_analysis(pier_name, section, load_data, strain_gauges, modulus_e
     sg_strain_vals = {name: (val / modulus_elastisitas) * 1e6 for name, val in sg_stress_vals.items()}
 
     # --- Tampilan Header & Info ---
-    st.subheader("Informasi Beban & Struktur")
+    st.subheader("Informasi Beban & Struktur (Teoritis)")
     col1, col2, col3, col4, col5 = st.columns(5)
     col1.metric("Stage", f"{load_data['Stage'].values[0]}")
     col2.metric("Part ID", f"{load_data['Part'].values[0]}")
@@ -365,50 +365,86 @@ def render_pier_analysis(pier_name, section, load_data, strain_gauges, modulus_e
     col4.metric("Momen My", f"{My:.2f} kN·m")
     col5.metric("Momen Mz", f"{Mz:.2f} kN·m")
 
-    # --- Visualisasi Teoritis ---
-    st.markdown("#### Analisis Teoritis (Finite Element)")
-    c1, c2 = st.columns(2)
-    with c1:
-        st.write("**Diagram Tegangan (σzz)**")
-        fig = create_mesh_plot(x_coords, y_coords, sig_zz, nodes, elements, "σzz", "MPa", "Tegangan", strain_gauges, sg_stress_vals)
-        st.plotly_chart(fig, use_container_width=True)
-    with c2:
-        st.write("**Diagram Regangan (ε)**")
-        fig = create_mesh_plot(x_coords, y_coords, strain_zz, nodes, elements, "ε", "με", "Regangan", strain_gauges, sg_strain_vals)
-        st.plotly_chart(fig, use_container_width=True)
-        
-    display_strain_gauge_table(strain_gauges, sg_stress_vals, modulus_elastisitas, "Detail Sensor (Teoritis)")
-   
-    # --- Visualisasi Aktual ---
-    st.divider()
+    # --- VISUALISASI SEJAJAR (ROW-BASED LAYOUT) ---
+    
+    # 1. Prepare Actual Data (Pre-calculation)
+    actual_data_ready = False
+    actual_stress_data = {}
+    actual_strain_data = {}
     
     if selected_actual_date and not df_actual.empty:
         short_name = PIER_MAP_SHORT.get(pier_name)
         baseline_cfg = BASELINE_CONFIG.get(short_name, {})
-        actual_strain_data = get_actual_values_by_date(df_actual, short_name, selected_actual_date, baseline_cfg)
+        actual_strain_dict = get_actual_values_by_date(df_actual, short_name, selected_actual_date, baseline_cfg)
         
-        if actual_strain_data:
-            st.markdown(f"#### Analisis Data Aktual ({selected_actual_date.strftime('%d %b %Y %H:%M')})")
-            
-            # Konversi Strain Aktual ke Stress Aktual
+        if actual_strain_dict:
+            actual_data_ready = True
+            actual_strain_data = actual_strain_dict
             actual_stress_data = {k: (v / 1e6) * modulus_elastisitas for k, v in actual_strain_data.items()}
-            
-            ac1, ac2 = st.columns(2)
-            with ac1:
-                fig_stress = create_actual_pier_plot(PIER_CONFIG[pier_name], actual_stress_data, "MPa", "Tegangan Aktual (σzz)")
-                st.plotly_chart(fig_stress, use_container_width=True)
-            with ac2:
-                fig_strain = create_actual_pier_plot(PIER_CONFIG[pier_name], actual_strain_data, "με", "Regangan Aktual (ε)")
-                st.plotly_chart(fig_strain, use_container_width=True)
-            
-            # Filter hanya sensor yang ada datanya
-            sgs_present = {k: v for k, v in strain_gauges.items() if k in actual_stress_data}
-            if sgs_present:
-                 display_strain_gauge_table(sgs_present, actual_stress_data, modulus_elastisitas, "Detail Sensor (Aktual)", baseline_values=baseline_cfg)
+
+    # 2. ROW 1: HEADERS
+    st.divider()
+    row1_col1, row1_col2 = st.columns(2, gap="medium")
+    
+    with row1_col1:
+        st.markdown("### Analisis Teoritis (FEA)")
+        st.caption("Hasil perhitungan simulasi elemen hingga.")
+    
+    with row1_col2:
+        st.markdown("### Analisis Aktual (Lapangan)")
+        if actual_data_ready:
+            st.caption(f"Data Tanggal: **{selected_actual_date.strftime('%d %b %Y %H:%M')}**")
         else:
-            st.warning(f"Data aktual tidak ditemukan untuk {pier_name} pada tanggal tersebut.")
-    else:
-        st.info("Silakan pilih Tanggal Data Aktual di sidebar untuk melihat perbandingan.")
+            if not selected_actual_date:
+                st.info("Pilih tanggal di sidebar.")
+            else:
+                st.warning("Data tidak tersedia.")
+
+    # 3. ROW 2: STRESS DIAGRAMS
+    row2_col1, row2_col2 = st.columns(2, gap="medium")
+    
+    with row2_col1:
+        st.write("**Diagram Tegangan (σzz)**")
+        fig_stress = create_mesh_plot(x_coords, y_coords, sig_zz, nodes, elements, "σzz", "MPa", "Tegangan", strain_gauges, sg_stress_vals)
+        st.plotly_chart(fig_stress, use_container_width=True)
+        
+    with row2_col2:
+        st.write("**Diagram Tegangan Aktual (σzz)**")
+        if actual_data_ready:
+            fig_stress_act = create_actual_pier_plot(PIER_CONFIG[pier_name], actual_stress_data, "MPa", "Tegangan Aktual")
+            st.plotly_chart(fig_stress_act, use_container_width=True)
+        else:
+            st.empty() # Placeholder empty
+
+    # 4. ROW 3: STRAIN DIAGRAMS
+    row3_col1, row3_col2 = st.columns(2, gap="medium")
+    
+    with row3_col1:
+        st.write("**Diagram Regangan (ε)**")
+        fig_strain = create_mesh_plot(x_coords, y_coords, strain_zz, nodes, elements, "ε", "με", "Regangan", strain_gauges, sg_strain_vals)
+        st.plotly_chart(fig_strain, use_container_width=True)
+        
+    with row3_col2:
+        st.write("**Diagram Regangan Aktual (ε)**")
+        if actual_data_ready:
+            fig_strain_act = create_actual_pier_plot(PIER_CONFIG[pier_name], actual_strain_data, "με", "Regangan Aktual")
+            st.plotly_chart(fig_strain_act, use_container_width=True)
+        else:
+            st.empty()
+
+    # 5. ROW 4: TABLES
+    row4_col1, row4_col2 = st.columns(2, gap="medium")
+    
+    with row4_col1:
+         display_strain_gauge_table(strain_gauges, sg_stress_vals, modulus_elastisitas, "Detail Sensor (Teoritis)")
+         
+    with row4_col2:
+        if actual_data_ready:
+            sgs_present = {k: v for k, v in strain_gauges.items() if k in actual_stress_data}
+            short_name = PIER_MAP_SHORT.get(pier_name)
+            baseline_cfg = BASELINE_CONFIG.get(short_name, {})
+            if sgs_present:
+                display_strain_gauge_table(sgs_present, actual_stress_data, modulus_elastisitas, "Detail Sensor (Aktual)", baseline_values=baseline_cfg)
 
 # ==========================================
 # 5. FUNGSI UTAMA (MAIN APP)
@@ -458,7 +494,7 @@ def main():
             }
 
     # --- Render Tabs ---
-    tab_names = list(PIER_CONFIG.keys()) + ["📈 Analisis Tren"]
+    tab_names = list(PIER_CONFIG.keys()) + ["Analisis Tren"]
     tabs = st.tabs(tab_names)
     
     # Render Pier Tabs
@@ -483,11 +519,11 @@ def main():
             else:
                 st.warning(f"Data beban tidak ditemukan untuk {pier_name} pada stage {stage}")
     
-
+    
     with tabs[-1]:
         st.header("Analisis Tren Historis (Teoritis)", divider="gray")
         
-        st.info("⚠️ Analisis tren melibatkan perhitungan berat untuk seluruh stage.")
+        st.info("Analisis tren melibatkan perhitungan berat untuk seluruh stage.")
         
         # Inisialisasi Session State untuk data tren
         if 'trend_data' not in st.session_state:
@@ -495,7 +531,7 @@ def main():
 
         # Tombol Pemicu Kalkulasi
         if st.button("Mulai Analisis Tren", type="primary"):
-            with st.spinner("⏳ Sedang menghitung data historis seluruh stage (mohon tunggu)..."):
+            with st.spinner("Sedang menghitung data historis seluruh stage (mohon tunggu)..."):
                 try:
                     df_history = calculate_stress_history(df_gaya_all, list_stage, sections_runtime_data, modulus_elastisitas)
                     st.session_state['trend_data'] = df_history

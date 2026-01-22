@@ -114,7 +114,6 @@ def render_navigation_cards():
     with col1:
         st.markdown("""
         <div class="feature-card">
-            <div class="card-icon">🏗️</div>
             <div class="card-title">Monitoring Pier</div>
             <div class="card-desc">
                 Analisis detail integritas struktur Pier (3A, 3B, 4A, 4B) meliputi:
@@ -127,14 +126,13 @@ def render_navigation_cards():
         </div>
         """, unsafe_allow_html=True)
         
-        if st.button("Buka Dashboard Pier", icon="👉", use_container_width=True):
+        if st.button("Buka Dashboard Pier", use_container_width=True):
             st.switch_page("pages/1_Monitoring_Pier.py")
     
     # -- Card 2: Box Girder Monitoring --
     with col2:
         st.markdown("""
         <div class="feature-card">
-            <div class="card-icon">📦</div>
             <div class="card-title">Monitoring Box Girder</div>
             <div class="card-desc">
                 Sistem pengawasan struktur Box Girder (Dalam Pengembangan):
@@ -147,7 +145,7 @@ def render_navigation_cards():
         </div>
         """, unsafe_allow_html=True)
         
-        if st.button("Buka Dashboard Box Girder", icon="👉", use_container_width=True):
+        if st.button("Buka Dashboard Box Girder", use_container_width=True):
             st.switch_page("pages/2_Monitoring_Box_Girder.py")
 
 def render_footer():
