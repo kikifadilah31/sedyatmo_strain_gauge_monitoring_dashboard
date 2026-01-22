@@ -483,12 +483,29 @@ def main():
             else:
                 st.warning(f"Data beban tidak ditemukan untuk {pier_name} pada stage {stage}")
     
-    # Render Tab Analisis Tren
+
     with tabs[-1]:
         st.header("Analisis Tren Historis (Teoritis)", divider="gray")
         
-        with st.spinner("Menghitung data historis seluruh stage..."):
-            df_history = calculate_stress_history(df_gaya_all, list_stage, sections_runtime_data, modulus_elastisitas)
+        st.info("⚠️ Analisis tren melibatkan perhitungan berat untuk seluruh stage.")
+        
+        # Inisialisasi Session State untuk data tren
+        if 'trend_data' not in st.session_state:
+            st.session_state['trend_data'] = None
+
+        # Tombol Pemicu Kalkulasi
+        if st.button("Mulai Analisis Tren", type="primary"):
+            with st.spinner("⏳ Sedang menghitung data historis seluruh stage (mohon tunggu)..."):
+                try:
+                    df_history = calculate_stress_history(df_gaya_all, list_stage, sections_runtime_data, modulus_elastisitas)
+                    st.session_state['trend_data'] = df_history
+                    st.rerun() # Rerun untuk menampilkan hasil
+                except Exception as e:
+                    st.error(f"Terjadi kesalahan saat perhitungan: {e}")
+
+        # Tampilkan Hasil jika ada di Session State
+        if st.session_state['trend_data'] is not None:
+            df_history = st.session_state['trend_data']
             
             if not df_history.empty:
                 # Plotting
@@ -511,14 +528,19 @@ def main():
                 # Download Button
                 csv = df_history.to_csv(index=False).encode('utf-8')
                 st.download_button(
-                    label="📥 Download Data Historis (CSV)",
+                    label="Download Data Historis (CSV)",
                     data=csv,
                     file_name="analisis_tren_teoritis.csv",
                     mime="text/csv",
-                    type="primary"
+                    type="secondary"
                 )
+                
+                # Tombol Reset
+                if st.button("🔄 Reset Analisis"):
+                    st.session_state['trend_data'] = None
+                    st.rerun()
             else:
-                st.warning("Gagal menghitung data historis.")
+                st.warning("Data historis kosong.")
 
 if __name__ == "__main__":
     main()
