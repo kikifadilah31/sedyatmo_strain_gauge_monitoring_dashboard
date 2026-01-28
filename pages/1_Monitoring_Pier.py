@@ -49,7 +49,7 @@ PIER_MAP_SHORT = {
 # 2. FUNGSI UTILITAS DATA (HELPER FUNCTIONS)
 # ==========================================
 
-@st.cache_data
+@st.cache_data(ttl=15)
 def load_actual_strain_data(csv_path):
     """
     Memuat data strain gauge aktual dari file CSV.
