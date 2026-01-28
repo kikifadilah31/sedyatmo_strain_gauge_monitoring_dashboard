@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 from sectionproperties.analysis import Section
 from sectionproperties.pre.library import rectangular_section
+from scipy.interpolate import griddata
 
 # ==========================================
 # 1. KONFIGURASI DAN KONSTANTA (CONSTANTS)
@@ -175,23 +176,33 @@ def get_cached_section_geometry(length, width, mesh_scale):
 def create_mesh_plot(x_coords, y_coords, values, nodes, elements, 
                      symbol, unit, title, strain_gauges=None, strain_gauge_values=None):
     """
-    Membuat plot interaktif Heatmap Mesh menggunakan Plotly.
+    Membuat plot interaktif Kontur (Isolines) menggunakan Plotly.
     """
     fig = go.Figure()
     
-    # Heatmap titik-titik node
-    fig.add_trace(go.Scatter(
-        x=x_coords, y=y_coords, mode='markers',
-        marker=dict(
-            size=8,
-            color=values,
-            colorscale='RdYlBu_r',
-            colorbar=dict(title=dict(text=f"{symbol} ({unit})", side="right"), tickformat=".2f"),
-            showscale=True
+    # 1. Interpolasi Grid untuk Kontur
+    # Buat grid regular
+    grid_x, grid_y = np.mgrid[min(x_coords):max(x_coords):100j, min(y_coords):max(y_coords):100j]
+    
+    # Interpolasi nilai ke grid (method='linear' menghasilkan garis lurus untuk gradient linear)
+    grid_z = griddata((x_coords, y_coords), values, (grid_x, grid_y), method='linear')
+    
+    # 2. Plot Kontur
+    fig.add_trace(go.Contour(
+        x=np.linspace(min(x_coords), max(x_coords), 100),
+        y=np.linspace(min(y_coords), max(y_coords), 100),
+        z=grid_z.T, # Transpose karena mgrid output shape behavior
+        colorscale='RdYlBu_r',
+        colorbar=dict(title=dict(text=f"{symbol} ({unit})", side="right"), tickformat=".2f"),
+        contours=dict(
+            coloring='heatmap', # Warna fill + garis
+            showlabels=True,    # Tampilkan label nilai pada garis
+            labelfont=dict(size=10, color='black')
         ),
-        text=[f"{symbol}: {v:.2f} {unit}" for v in values],
-        hovertemplate="<b>Coord</b>: (%{x:.1f}, %{y:.1f})<br>%{text}<extra></extra>",
-        name=title
+        ncontours=15, # Jumlah garis kontur
+        line=dict(smoothing=0), # Smoothing 0 agar akurat secara linear
+        hovertemplate=f"x: %{{x:.1f}}<br>y: %{{y:.1f}}<br>{symbol}: %{{z:.2f}} {unit}<extra></extra>",
+        name="Kontur"
     ))
     
     # Anotasi Sensor
@@ -215,7 +226,7 @@ def create_mesh_plot(x_coords, y_coords, values, nodes, elements,
                 name=name, hoverinfo='name+x+y'
             ))
 
-    # Garis Mesh (Wireframe) - Dioptimalkan menjadi trace tunggal
+    # Garis Mesh (Wireframe) - Opsional, bisa di-comment jika mengganggu visual kontur
     x_lines, y_lines = [], []
     for tri in elements:
         tri_nodes = nodes[tri]
@@ -227,7 +238,7 @@ def create_mesh_plot(x_coords, y_coords, values, nodes, elements,
 
     fig.add_trace(go.Scatter(
         x=x_lines, y=y_lines, mode='lines',
-        line=dict(color='rgba(100,100,100,0.3)', width=0.5),
+        line=dict(color='rgba(100,100,100,0.1)', width=0.5), # Opacity dikurangi agar kontur jelas
         hoverinfo='skip', showlegend=False
     ))
 
